@@ -1,0 +1,24 @@
+# Serves the Hermes web client and the gateway it talks to from ONE origin.
+# The gateway's CORS policy only admits loopback origins and its WebSocket
+# Origin check rejects foreign hosts, so the bundle cannot live elsewhere.
+#
+#   HERMES_WEB_ADDRESS  site address; `https://hermes.lan` gets a certificate
+#                       from Caddy's local CA, `:8088` serves plain HTTP
+#   HERMES_GATEWAY      where `hermes serve` listens
+#   HERMES_WEB_ROOT     the built bundle (apps/web-client/dist)
+{$HERMES_WEB_ADDRESS::8088} {
+	@gateway path /api/* /auth/* /login
+	handle @gateway {
+		reverse_proxy {$HERMES_GATEWAY:127.0.0.1:9119}
+	}
+
+	handle {
+		root * {$HERMES_WEB_ROOT:/srv/hermes-web}
+		# Hashed assets never change; index.html must, so a deploy is picked up.
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		header /index.html Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

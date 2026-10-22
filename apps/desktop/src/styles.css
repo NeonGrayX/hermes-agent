@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* Scan this renderer's sources even when another Vite root builds it (apps/web-client). */
+@source '.';
 @plugin '@tailwindcss/typography';
 @import 'tw-shimmer';
 @import 'katex/dist/katex.min.css';
