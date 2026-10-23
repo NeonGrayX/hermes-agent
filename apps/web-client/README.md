@@ -75,8 +75,31 @@ to the gateway, so it is same-origin like production.
 
 ## Deploy
 
+### Standalone container that updates itself (recommended)
+
+On any Docker host (a home server, a VPS, Portainer/Coolify/Dokploy stacks),
+with only [`deploy/compose.yaml`](deploy/compose.yaml):
+
+```bash
+HERMES_GATEWAY=https://hermes.example.com docker compose up -d
+```
+
+`HERMES_GATEWAY` is the gateway you already use in Hermes Desktop, or its LAN
+address. Put port 8080 behind your HTTPS reverse proxy. Every
+`UPDATE_INTERVAL` (6h) the container fetches this branch and upstream Hermes,
+merges them, and rebuilds the client when either moved; a failed merge or
+build keeps the last good build serving (`docker logs` says why). The first
+build takes a few minutes.
+
+The gateway must accept the client's hostname. A gateway bound to all
+interfaces (`--host 0.0.0.0`, the usual container/NAS setup) does; one bound to
+loopback needs `dashboard.public_url` set to the client's address.
+
+### Building it yourself
+
 ```bash
 npm run build        # → apps/web-client/dist
+docker build -f apps/web-client/Dockerfile -t hermes-web-client .   # or as an image
 ```
 
 Serve `dist/` and the gateway from one origin. The simplest way: if the host
