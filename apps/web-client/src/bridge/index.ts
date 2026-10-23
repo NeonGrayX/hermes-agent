@@ -11,6 +11,16 @@ import type {
 
 import { getConnection, getGatewayWsUrl, storedProfile, storeProfile } from './connection'
 import { gatewayBaseUrl, gatewayFetchJson, redirectToSignIn } from './http'
+import {
+  isLocalPath,
+  pathForFile,
+  pickLocalFiles,
+  readLocalDataUrl,
+  readLocalText,
+  saveClipboardImage,
+  saveLocalImage,
+  saveLocalText
+} from './local-files'
 import { copyText, downloadUrl, readClipboardText, saveText, showNotification } from './web-platform'
 
 type HermesDesktopBridge = Window['hermesDesktop']
@@ -25,8 +35,28 @@ function unsupported(feature: string) {
   return (): Promise<never> => Promise.reject(new Error(`${feature} is not available in the Hermes web client.`))
 }
 
+/** Remote-mode fs reads the renderer sends straight to the gateway
+ *  (desktop-fs.ts) also reach files on this device — a just-attached image
+ *  rendered in the transcript, say. Answer those from memory. */
+const LOCAL_FS_READS: Partial<Record<string, (path: string) => Promise<unknown>>> = {
+  '/api/fs/read-data-url': readLocalDataUrl,
+  '/api/fs/read-text': readLocalText
+}
+
+function localFsRead(request: HermesApiRequest): Promise<unknown> | null {
+  if (request.method && request.method !== 'GET') {
+    return null
+  }
+
+  const url = new URL(request.path, 'http://local')
+  const read = LOCAL_FS_READS[url.pathname]
+  const path = url.searchParams.get('path')
+
+  return read && path && isLocalPath(path) ? read(path) : null
+}
+
 function api<T>(request: HermesApiRequest): Promise<T> {
-  return gatewayFetchJson<T>(request, storedProfile())
+  return (localFsRead(request) as Promise<T> | null) ?? gatewayFetchJson<T>(request, storedProfile())
 }
 
 function fsGet<T>(endpoint: string, path: string): Promise<T> {
@@ -34,6 +64,10 @@ function fsGet<T>(endpoint: string, path: string): Promise<T> {
 }
 
 async function readFileDataUrl(path: string): Promise<string> {
+  if (isLocalPath(path)) {
+    return readLocalDataUrl(path)
+  }
+
   const result = await fsGet<string | { dataUrl?: string }>('read-data-url', path)
 
   return typeof result === 'string' ? result : (result?.dataUrl ?? '')
@@ -252,18 +286,20 @@ export function createWebBridge(): HermesDesktopBridge {
           payload.suggestedName
         )
       }),
-    saveImageBuffer: unsupported('Saving to this device’s disk'),
-    savePastedText: unsupported('Saving to this device’s disk'),
-    saveClipboardImage: unsupported('Saving to this device’s disk'),
-    getPathForFile: () => '',
+    saveImageBuffer: async (data, ext, name) => saveLocalImage(data, ext, name),
+    savePastedText: async text => saveLocalText(text),
+    saveClipboardImage,
+    getPathForFile: pathForFile,
     fetchLinkTitle: () => Promise.resolve(''),
 
     // --- Files: the gateway host's filesystem ---------------------------------
     readDir: path => fsGet<HermesReadDirResult>('list', path),
-    readFileText: path => fsGet<HermesReadFileTextResult>('read-text', path),
+    readFileText: path => (isLocalPath(path) ? readLocalText(path) : fsGet<HermesReadFileTextResult>('read-text', path)),
     readFileDataUrl,
     readFileDataUrlForAttach: readFileDataUrl,
-    selectPaths: () => Promise.resolve([]),
+    // Files come from this device; folder picks go to the gateway's own
+    // picker (selectDesktopPaths routes those before reaching the bridge).
+    selectPaths: options => (options?.directories ? Promise.resolve([]) : pickLocalFiles(options)),
     normalizePreviewTarget: () => Promise.resolve(null),
     watchPreviewFile: unsupported('Watching files'),
     stopPreviewFileWatch: () => Promise.resolve(false),
