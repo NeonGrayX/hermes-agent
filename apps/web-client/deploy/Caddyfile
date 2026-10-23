@@ -7,7 +7,7 @@
 #   HERMES_GATEWAY      where `hermes serve` listens
 #   HERMES_WEB_ROOT     the built bundle (apps/web-client/dist)
 {$HERMES_WEB_ADDRESS::8088} {
-	@gateway path /api/* /auth/* /login
+	@gateway path /api/* /auth/* /login /fonts/*
 	handle @gateway {
 		reverse_proxy {$HERMES_GATEWAY:127.0.0.1:9119}
 	}

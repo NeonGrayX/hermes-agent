@@ -3,3 +3,5 @@
 // side-effect imports in order, so this one runs first.
 import './install-bridge'
 import '@/main'
+// After the renderer's styles, so these win ties.
+import './web.css'

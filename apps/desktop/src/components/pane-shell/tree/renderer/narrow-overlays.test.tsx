@@ -172,3 +172,48 @@ describe('narrow overlay of a stacked zone', () => {
     )
   })
 })
+
+describe('narrow overlay reveal targets', () => {
+  it('reveals a pane that the same toggle un-hides before the overlay re-renders', () => {
+    // A closed file browser is HIDDEN (not just collapsed); the narrow toggle
+    // marks it open and dispatches the reveal in one tick. The overlay must
+    // still resolve the target and show it once the un-hide lands.
+    $hiddenTreePanes.set(new Set(['sessions']))
+    const { getByTestId } = render(<NarrowOverlays />)
+
+    act(() => {
+      $hiddenTreePanes.set(new Set())
+      window.dispatchEvent(new CustomEvent(PANE_TOGGLE_REVEAL_EVENT, { detail: { id: 'sessions', mode: 'toggle' } }))
+    })
+
+    expect(getByTestId('sessions-body')).toBeTruthy()
+  })
+})
+
+describe('narrow overlay on a touch screen', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      addEventListener: () => {},
+      matches: query === '(pointer: coarse)',
+      media: query,
+      removeEventListener: () => {}
+    }))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('closes a pinned overlay when the scrim is tapped', () => {
+    // No hover on touch: without the scrim a pinned overlay could only be
+    // closed by the toggle that opened it.
+    render(<NarrowOverlays />)
+    revealPane('sessions')
+
+    const scrim = document.querySelector<HTMLElement>('[data-narrow-overlay-scrim]')
+    expect(scrim).not.toBeNull()
+
+    fireEvent.pointerDown(scrim!)
+    expect(document.querySelector('[data-narrow-overlay]')).toBeNull()
+  })
+})

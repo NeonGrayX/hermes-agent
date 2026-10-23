@@ -1,0 +1,32 @@
+/* Browser-only shell adjustments. The desktop renderer's own styles.css is
+   loaded by @/main; these rules only apply under html[data-hermes-web]. */
+
+/* The shell sits inside the safe area (notch, home indicator, rounded corners)
+   and follows the visual viewport, so an on-screen keyboard shrinks the app
+   instead of covering the composer. viewport.ts keeps the two variables
+   current. `contain` makes #root the containing block for the shell's
+   position:fixed titlebar clusters and drawers, so they move with it. */
+html[data-hermes-web] #root {
+  position: fixed;
+  top: calc(var(--hermes-web-viewport-top, 0px) + env(safe-area-inset-top));
+  right: env(safe-area-inset-right);
+  left: env(safe-area-inset-left);
+  height: calc(var(--hermes-web-viewport-height, 100dvh) - env(safe-area-inset-top) - var(--hermes-web-inset-bottom));
+  contain: layout paint;
+}
+
+html[data-hermes-web] {
+  --hermes-web-inset-bottom: env(safe-area-inset-bottom);
+  /* No rubber-band bounce or pull-to-refresh on the app shell. */
+  overscroll-behavior: none;
+}
+
+/* With the keyboard up its edge is the bottom, not the home indicator. */
+html[data-hermes-web][data-keyboard-open] {
+  --hermes-web-inset-bottom: 0px;
+}
+
+/* Touch: no grey flash on tap. */
+html[data-hermes-web] * {
+  -webkit-tap-highlight-color: transparent;
+}

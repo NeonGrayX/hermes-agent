@@ -15,7 +15,8 @@ const gatewayTarget = process.env.HERMES_GATEWAY_URL || 'http://127.0.0.1:9119'
 // Every path the gateway owns. The renderer, the login page and the session
 // cookies must share one origin: the gateway's CORS policy only admits
 // loopback origins, and its WebSocket Origin check rejects any other host.
-const gatewayPaths = ['/api', '/auth', '/login']
+// /fonts: the gateway's sign-in page loads its brand fonts from there.
+const gatewayPaths = ['/api', '/auth', '/login', '/fonts']
 
 // The renderer is the desktop app's, unchanged: its config carries the
 // aliases, React Compiler pass, chunking and asset plugins. This config only

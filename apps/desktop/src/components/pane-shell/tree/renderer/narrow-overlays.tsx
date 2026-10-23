@@ -8,11 +8,13 @@
 
 import { useStore } from '@nanostores/react'
 import { type MouseEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useInRouterContext, useLocation } from 'react-router'
 
 import { PaneTab, PaneTabLabel, PaneTabStrip } from '@/components/ui/pane-tab'
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import type { Contribution } from '@/contrib/types'
+import { useMediaQuery } from '@/hooks/use-media-query'
 import { ESCAPE_PRIORITY, isTopEscapeLayer, pushEscapeLayer } from '@/lib/escape-layers'
 import { cn } from '@/lib/utils'
 import { $chatOnboardingSolo } from '@/store/onboarding-intro'
@@ -45,8 +47,28 @@ export function narrowOverlayWidth(ctx: TrackContext, tree: LayoutNode | null, r
   return track ?? paneChrome(revealed).width ?? '18rem'
 }
 
+/** Calls `onNavigate` after every route change (not on mount). Its own component
+ *  so NarrowOverlays still renders outside a router (tests, previews). */
+function NavigationListener({ onNavigate }: { onNavigate: () => void }) {
+  const { key } = useLocation()
+  const mountedAt = useRef(key)
+
+  useEffect(() => {
+    if (key !== mountedAt.current) {
+      onNavigate()
+    }
+  }, [key, onNavigate])
+
+  return null
+}
+
 export function NarrowOverlays() {
   const narrow = useStore($narrowViewport)
+  const inRouter = useInRouterContext()
+  // Touch screens have no hover to dismiss a pinned overlay, so there it acts
+  // as a drawer: a scrim over everything else closes it, and so does opening
+  // whatever was tapped inside it.
+  const touch = useMediaQuery('(pointer: coarse)')
   const solo = useStore($chatOnboardingSolo)
   const tree = useStore($layoutTree)
   const panes = useContributions('panes')
@@ -77,6 +99,8 @@ export function NarrowOverlays() {
 
   // Own an Escape layer only while something is revealed, so Escape closes the
   // overlay only when it's the top layer (never under a dialog / edit mode).
+  const closeReveal = useCallback(() => setReveal(null), [])
+
   const revealActive = reveal !== null
   useEffect(() => (revealActive ? pushEscapeLayer(ESCAPE_PRIORITY.narrowOverlay) : undefined), [revealActive])
 
@@ -89,8 +113,16 @@ export function NarrowOverlays() {
     [solo, panes, inTree, hiddenPanes]
   )
 
-  const collapsiblesRef = useRef(collapsibles)
-  collapsiblesRef.current = collapsibles
+  // Reveal events resolve against hidden panes too: a toggle may un-hide its
+  // pane in the same tick (setFileBrowserOpen), before this component has
+  // re-rendered. The overlay itself still renders only from `collapsibles`.
+  const revealTargets = useMemo(
+    () => (solo ? [] : panes.filter(p => paneChrome(p).collapsible && inTree.has(p.id))),
+    [solo, panes, inTree]
+  )
+
+  const revealTargetsRef = useRef(revealTargets)
+  revealTargetsRef.current = revealTargets
 
   // ⌘B / ⌘G's narrow branch dispatches the app's toggle-reveal event with the
   // REAL pane id — accept those via each contribution's revealAliases.
@@ -109,7 +141,7 @@ export function NarrowOverlays() {
         return
       }
 
-      const match = collapsiblesRef.current.find(p => p.id === id || paneChrome(p).revealAliases?.includes(id))
+      const match = revealTargetsRef.current.find(p => p.id === id || paneChrome(p).revealAliases?.includes(id))
 
       if (!match) {
         return
@@ -202,10 +234,24 @@ export function NarrowOverlays() {
         />
       ))}
 
+      {revealed && touch && (
+        <div
+          aria-hidden="true"
+          className="fixed inset-0 z-[75] bg-black/30"
+          data-narrow-overlay-scrim=""
+          onPointerDown={event => {
+            event.preventDefault()
+            closeReveal()
+          }}
+        />
+      )}
+      {revealed && touch && inRouter && <NavigationListener onNavigate={closeReveal} />}
+
       {revealed && (
         <div
           className={cn(
-            'absolute inset-y-0 z-40 flex flex-col overflow-hidden bg-(--ui-sidebar-surface-background) shadow-2xl',
+            touch ? 'fixed inset-y-0 z-[80]' : 'absolute inset-y-0 z-40',
+            'flex flex-col overflow-hidden bg-(--ui-sidebar-surface-background) shadow-2xl',
             sideOf(revealed) === 'left'
               ? 'left-0 border-r border-(--ui-stroke-secondary)'
               : 'right-0 border-l border-(--ui-stroke-secondary)'

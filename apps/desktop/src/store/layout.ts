@@ -570,6 +570,19 @@ function revealNarrowPane(id: string, mode: 'close' | 'open' | 'toggle'): boolea
   return true
 }
 
+// A closed file browser is hidden from the tree, not just collapsed, so the
+// narrow overlay would have nothing to reveal: mark it open first (which also
+// keeps it docked if the window widens again).
+function revealNarrowFileBrowser(): boolean {
+  if (typeof window === 'undefined' || !matchesQuery(SIDEBAR_COLLAPSE_MEDIA_QUERY)) {
+    return false
+  }
+
+  $fileBrowserOpen.set(true)
+
+  return revealNarrowPane(FILE_BROWSER_PANE_ID, 'toggle')
+}
+
 // An edge belongs to the pane that sits on it: the flip (⌘\ / a mirrored
 // layout) puts the sessions sidebar on the right, and ⌘B keeps meaning the
 // sidebar, ⌘J the file tree — never "whatever is on the left".
@@ -647,7 +660,7 @@ export function layoutHasLeftSide(): boolean {
 }
 
 export function toggleFileBrowserOpen() {
-  if (revealNarrowPane(FILE_BROWSER_PANE_ID, 'toggle')) {
+  if (revealNarrowFileBrowser()) {
     return
   }
 
@@ -679,7 +692,7 @@ export function setFileBrowserOpen(open: boolean) {
 // minimize, which keeps its tab on a persistent rail so the toggle round-trips
 // exactly like the zone chevron.
 export function toggleRightSide() {
-  if (revealNarrowPane(FILE_BROWSER_PANE_ID, 'toggle')) {
+  if (revealNarrowFileBrowser()) {
     return
   }
 
