@@ -92,6 +92,14 @@ describe('mediaGatewayStreamUrl', () => {
     expect(mediaGatewayStreamUrl('/tmp/a.mp4')).toBe('hermes-media://remote/%2Ftmp%2Fa.mp4?profile=voice%20reviewer')
   })
 
+  it('streams straight from a gateway that serves this page (browser client cookie auth)', () => {
+    $connection.set({ authMode: 'oauth', baseUrl: window.location.origin, mode: 'remote', profile: 'work' } as never)
+    expect(mediaGatewayStreamUrl('/tmp/a b.mp4')).toBe(
+      `${window.location.origin}/api/files/stream?path=%2Ftmp%2Fa+b.mp4&profile=work`
+    )
+    expect(mediaExternalUrl('/tmp/a.png')).toBe(`${window.location.origin}/api/files/download?path=%2Ftmp%2Fa.png&profile=work`)
+  })
+
   it('pins remote streams to their registered connection and profile', () => {
     $connection.set({
       connectionId: 'studio-ssh',

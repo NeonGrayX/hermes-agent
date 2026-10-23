@@ -15,6 +15,16 @@ html[data-hermes-web] #root {
   contain: layout paint;
 }
 
+/* The shell sizes itself with h-screen/w-screen (100vh/100vw), which would
+   ignore the keyboard and the safe-area insets above. Fill #root instead. */
+html[data-hermes-web] #root .h-screen {
+  height: 100%;
+}
+
+html[data-hermes-web] #root .w-screen {
+  width: 100%;
+}
+
 html[data-hermes-web] {
   --hermes-web-inset-bottom: env(safe-area-inset-bottom);
   /* No rubber-band bounce or pull-to-refresh on the app shell. */

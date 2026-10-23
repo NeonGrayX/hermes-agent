@@ -16,6 +16,7 @@ import { findGroup } from '@/components/pane-shell/tree/model'
 import {
   $activeTreeGroup,
   $layoutTree,
+  $narrowViewport,
   closeTabPane,
   revealTreePane,
   treePanesWithPrefix
@@ -352,7 +353,9 @@ const watchPreviewTileMirror = paneMirror<{ id: string }>({
   // along). Every SUBSEQUENT preview stacks into that zone as a center tab:
   // without the anchor each opened file split a new zone off the right edge
   // (#93610), turning three file opens into three ever-narrower columns.
-  dir: tab => (existingPreviewAnchor(tab.id) ? 'center' : 'right'),
+  // A narrow viewport has no room for a column beside the chat, so there the
+  // first preview stacks into the chat's own zone (the default anchor) too.
+  dir: tab => (existingPreviewAnchor(tab.id) || $narrowViewport.get() ? 'center' : 'right'),
   anchor: tab => existingPreviewAnchor(tab.id),
   minWidth: '22rem',
   title: previewTitle,

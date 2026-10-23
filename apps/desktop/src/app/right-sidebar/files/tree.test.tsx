@@ -113,4 +113,28 @@ describe('ProjectTree context-menu clicks', () => {
 
     expect(onPreviewFile).toHaveBeenCalledWith('/w/a.ts')
   })
+
+  it('a tap on a touch screen previews the file and closes the narrow drawer', async () => {
+    // Touch has no double-click, so the single tap is the only way to open a file.
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(pointer: coarse)', media: query }))
+    const reveals: unknown[] = []
+    const onReveal = (event: Event) => reveals.push((event as CustomEvent).detail)
+    window.addEventListener('hermes:pane-toggle-reveal', onReveal)
+
+    try {
+      const { onPreviewFile } = renderTree()
+
+      await waitFor(() => {
+        expect(screen.getByText('a.ts')).toBeTruthy()
+      })
+
+      fireEvent.click(screen.getByText('a.ts'))
+
+      expect(onPreviewFile).toHaveBeenCalledWith('/w/a.ts')
+      expect(reveals).toEqual([{ id: 'file-browser', mode: 'close' }])
+    } finally {
+      window.removeEventListener('hermes:pane-toggle-reveal', onReveal)
+      vi.unstubAllGlobals()
+    }
+  })
 })

@@ -599,12 +599,13 @@ bindPaneVisibility(
 // hides; PTYs stay alive while collapsed (see PersistentTerminal). Simple has
 // no terminal: where chrome is off a closed one hides, rail and all, and ⌃`
 // is the door for the session.
+// A shell without local terminals (the browser client) never shows the rail.
 bindToolPaneCollapse(
   'terminal',
   $terminalTakeover,
   () => setTerminalTakeover(false),
   () => setTerminalTakeover(true),
-  $showsAdvancedChrome
+  window.hermesDesktop?.terminal ? $showsAdvancedChrome : atom(false)
 )
 // Without the statusbar, the rail is the only way to switch profiles or gateways.
 $profiles.subscribe(profiles => setModeContext({ profileCount: profiles.length }))

@@ -309,16 +309,6 @@ export function createWebBridge(): HermesDesktopBridge {
       pickDefaultProjectDir: () => Promise.resolve({ canceled: true, dir: null }),
       setDefaultProjectDir: dir => Promise.resolve({ dir })
     },
-    terminal: {
-      attach: () => Promise.resolve(false),
-      cwd: () => Promise.resolve(null),
-      dispose: () => Promise.resolve(false),
-      onData: unsubscribe,
-      onExit: unsubscribe,
-      resize: () => Promise.resolve(false),
-      start: unsupported('A terminal on this device'),
-      write: () => Promise.resolve(false)
-    },
 
     // --- Diagnostics, updates and install management --------------------------
     revealLogs: () => Promise.resolve({ error: 'unsupported', ok: false, path: '' }),

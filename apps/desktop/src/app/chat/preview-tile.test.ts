@@ -8,6 +8,7 @@ vi.mock('./right-rail/preview-console-store', () => ({
   forgetPreviewConsole: () => undefined
 }))
 
+import { $narrowViewport } from '@/components/pane-shell/tree/store'
 import { registry } from '@/contrib/registry'
 import { $previewTabs, closeRightRail, noteBrowserPage, openPreview } from '@/store/preview'
 
@@ -134,6 +135,23 @@ describe('preview tiles stack, not split (#93610)', () => {
 
     expect(artifact?.pos).toBe('center')
     expect(artifact?.pane).toBe('preview-tile:file:/tmp/a.ts')
+  })
+
+  it('stacks even the first preview into the chat zone on a narrow viewport', () => {
+    // A phone has no room for a column beside the chat: a split there leaves
+    // two unusable slivers, so the preview becomes a tab next to the chat.
+    $narrowViewport.set(true)
+
+    try {
+      openPreview(fileTarget('/tmp/a.ts'))
+
+      const first = dockOf('preview-tile:file:/tmp/a.ts')
+
+      expect(first?.pos).toBe('center')
+      expect(first?.pane).toBe('workspace')
+    } finally {
+      $narrowViewport.set(false)
+    }
   })
 
   it('lets a lone preview open its own right-docked zone again after all tabs closed', () => {

@@ -4,13 +4,15 @@ import { useMemo } from 'react'
 import { type NodeApi, type NodeRendererProps, type RowRendererProps, Tree, type TreeApi } from 'react-arborist'
 
 import { TreeSkeleton } from '@/components/chat/skeletons'
+import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { Codicon } from '@/components/ui/codicon'
 import { markRightPanePerf } from '@/debug/right-pane-events'
+import { matchesQuery } from '@/hooks/use-media-query'
 import { useResizeObserver } from '@/hooks/use-resize-observer'
 import { cn } from '@/lib/utils'
 import { type RepoChangeKind, repoChangeKindForPath } from '@/store/coding-status'
 import { $renamingPath, beginInlineRename } from '@/store/file-actions'
-import { $revealInTreeRequest } from '@/store/layout'
+import { $revealInTreeRequest, FILE_BROWSER_PANE_ID } from '@/store/layout'
 
 import { FileEntryContextMenu, InlineRenameInput, isRenameShortcut } from '../file-actions'
 
@@ -331,6 +333,14 @@ function ProjectTreeRow({
 
         if (isFolder) {
           node.toggle()
+        } else if (matchesQuery('(pointer: coarse)')) {
+          // Touch has no double-click: a tap opens the file, and a narrow
+          // overlay drawer steps aside so the preview is what's on screen.
+          node.select()
+          onPreviewFile?.(node.data.id)
+          window.dispatchEvent(
+            new CustomEvent(PANE_TOGGLE_REVEAL_EVENT, { detail: { id: FILE_BROWSER_PANE_ID, mode: 'close' } })
+          )
         } else {
           node.select()
         }

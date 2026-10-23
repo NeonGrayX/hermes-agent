@@ -245,6 +245,37 @@ export async function resolveMediaPlaybackSrc(path: string): Promise<string> {
   return resolveMediaDisplaySrc(path)
 }
 
+// A gateway serving this page from its own origin (the browser client)
+// authenticates plain URLs with its session cookie, so media can point at it
+// directly — no token in the URL and no main-process proxy. Null otherwise.
+function sameOriginGatewayUrl(endpoint: '/api/files/download' | '/api/files/stream', path: string): null | string {
+  const conn = $connection.get()
+
+  if (!isRemoteGateway() || !conn?.baseUrl || typeof window === 'undefined') {
+    return null
+  }
+
+  let url: URL
+
+  try {
+    url = new URL(`${conn.baseUrl.replace(/\/+$/, '')}${endpoint}`)
+  } catch {
+    return null
+  }
+
+  if (url.origin !== window.location.origin) {
+    return null
+  }
+
+  url.searchParams.set('path', filePathFromMediaPath(path))
+
+  if (conn.profile) {
+    url.searchParams.set('profile', conn.profile)
+  }
+
+  return url.toString()
+}
+
 // Resolve a media path to a URL the shell can open. Remote mode rewrites
 // gateway-local paths to an authenticated /api/files/download URL (the file
 // lives on the gateway, not this disk); local mode keeps the file:// form.
@@ -261,6 +292,12 @@ export function mediaExternalUrl(path: string): string {
 
       return `${conn.baseUrl}/api/files/download?path=${file}&token=${encodeURIComponent(conn.token)}`
     }
+
+    const sameOrigin = sameOriginGatewayUrl('/api/files/download', path)
+
+    if (sameOrigin) {
+      return sameOrigin
+    }
   }
 
   return /^file:/i.test(path) ? path : pathToLocalFileUrl(path)
@@ -274,6 +311,12 @@ export function mediaGatewayStreamUrl(path: string): string {
   const conn = $connection.get()
 
   if (isRemoteGateway()) {
+    const sameOrigin = sameOriginGatewayUrl('/api/files/stream', path)
+
+    if (sameOrigin) {
+      return sameOrigin
+    }
+
     const file = encodeURIComponent(filePathFromMediaPath(path))
 
     const scope = [

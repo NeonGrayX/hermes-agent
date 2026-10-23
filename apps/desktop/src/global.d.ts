@@ -561,7 +561,8 @@ declare global {
           options?: { maxDepth?: number; enabled?: boolean; excludePaths?: string[] }
         ) => Promise<{ root: string; label: string }[]>
       }
-      terminal: {
+      /** Local PTYs. Absent where the shell has no terminal (the browser client). */
+      terminal?: {
         attach: (id: string) => Promise<boolean>
         /** Best-effort current working directory of the live PTY child (POSIX
          *  only; null on Windows or when unavailable). Used to reopen a tab
