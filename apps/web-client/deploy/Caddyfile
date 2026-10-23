@@ -3,13 +3,19 @@
 # Origin check rejects foreign hosts, so the bundle cannot live elsewhere.
 #
 #   HERMES_WEB_ADDRESS  site address; `https://hermes.lan` gets a certificate
-#                       from Caddy's local CA, `:8088` serves plain HTTP
-#   HERMES_GATEWAY      where `hermes serve` listens
+#                       from Caddy's local CA, `:8080` serves plain HTTP
+#                       (behind a reverse proxy that terminates TLS)
+#   HERMES_GATEWAY      the gateway: `http://10.0.0.5:9119`, or its own
+#                       public address such as `https://hermes.example.com`
 #   HERMES_WEB_ROOT     the built bundle (apps/web-client/dist)
 {$HERMES_WEB_ADDRESS::8088} {
 	@gateway path /api/* /auth/* /login /fonts/*
 	handle @gateway {
-		reverse_proxy {$HERMES_GATEWAY:127.0.0.1:9119}
+		reverse_proxy {$HERMES_GATEWAY:http://127.0.0.1:9119} {
+			# The gateway's own name, not this site's: a gateway behind a
+			# TLS front (Cloudflare, a NAS app proxy) is routed by it.
+			header_up Host {upstream_hostport}
+		}
 	}
 
 	handle {

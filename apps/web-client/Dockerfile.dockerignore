@@ -1,0 +1,10 @@
+# BuildKit reads this instead of the root .dockerignore (which drops apps/ for
+# the agent image). The client build needs the root manifests and apps/.
+**/node_modules
+**/dist
+.git
+*
+!package.json
+!package-lock.json
+!apps/
+apps/web-client/dist

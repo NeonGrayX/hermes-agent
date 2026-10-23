@@ -1,0 +1,27 @@
+# Hermes web client on any Docker host, kept up to date by itself.
+#
+#   HERMES_GATEWAY=https://hermes.example.com docker compose up -d
+#
+# The container rebuilds the client whenever this branch or upstream Hermes
+# changes (every UPDATE_INTERVAL). Put it behind your HTTPS reverse proxy; the
+# phone needs HTTPS for the microphone, clipboard and home-screen install.
+services:
+  hermes-web:
+    build:
+      context: https://github.com/NeonGrayX/hermes-agent.git#feat/web-mobile-client:apps/web-client/deploy
+      dockerfile: autobuild/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Your gateway: its LAN address (http://10.0.0.5:9119) or the address you
+      # already use in Hermes Desktop (https://hermes.example.com).
+      HERMES_GATEWAY: ${HERMES_GATEWAY:?set HERMES_GATEWAY to your Hermes gateway URL}
+      UPDATE_INTERVAL: 6h
+    volumes:
+      - work:/work
+      - site:/site
+
+volumes:
+  work:
+  site:
