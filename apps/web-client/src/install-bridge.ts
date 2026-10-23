@@ -1,4 +1,5 @@
 import { createWebBridge } from './bridge'
+import { trackContextMenuTarget } from './bridge/context-menu'
 import { trackVisualViewport } from './viewport'
 
 // crypto.randomUUID exists only in secure contexts, and a gateway opened by
@@ -18,3 +19,4 @@ if (typeof crypto.randomUUID !== 'function') {
 window.hermesDesktop = createWebBridge()
 document.documentElement.dataset.hermesWeb = 'true'
 trackVisualViewport()
+trackContextMenuTarget()

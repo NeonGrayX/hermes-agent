@@ -107,6 +107,31 @@ describe('AppContextMenu', () => {
     expect(screen.queryByText('Copy resolved URL')).toBeNull()
   })
 
+  // Electron's main process only reports spellcheck/image facts for an
+  // unprevented gesture, and draws no menu of its own: leave the default.
+  it('leaves the gesture unprevented when a main process owns the menu event', async () => {
+    installBridge({ onContextMenuSpellcheck: vi.fn(() => () => {}) })
+    mountMenu()
+    const host = attach('<a href="https://example.com/docs">Docs</a>')
+
+    expect(fireEvent.contextMenu(host.querySelector('a')!)).toBe(true)
+    expect(await screen.findByText('Copy URL')).toBeTruthy()
+  })
+
+  // In a browser the default is the browser's own menu, drawn over ours.
+  it('prevents the browser menu without a main process, except on Shift', async () => {
+    installBridge()
+    mountMenu()
+    const host = attach('<a href="https://example.com/docs">Docs</a>')
+    const link = host.querySelector('a')!
+
+    expect(fireEvent.contextMenu(link, { shiftKey: true })).toBe(true)
+    expect($contextMenu.get()).toBeNull()
+
+    expect(fireEvent.contextMenu(link)).toBe(false)
+    expect(await screen.findByText('Copy URL')).toBeTruthy()
+  })
+
   // The url chip used to be a `<button>`: `resolveDomTarget` only knows
   // `a[href]`, so the right-click fell through to the shell fallback menu.
   it('offers the link verbs on a message url chip right-click', async () => {

@@ -549,7 +549,24 @@ export function AppContextMenu() {
     // called because Chromium emits the main-process context-menu event (the
     // spellcheck + image-coordinate source) only for unprevented gestures —
     // and with no Menu.popup anywhere, "default" means no menu at all.
+    // Without that main process (the web client in a browser), "default" is
+    // the browser's own menu, drawn over ours — so there it IS prevented, and
+    // Shift+right-click is left alone to reach the browser menu on purpose.
+    const browserMenu = !window.hermesDesktop?.onContextMenuSpellcheck
+
+    const claimGesture = (event: MouseEvent) => {
+      if (browserMenu) {
+        event.preventDefault()
+      }
+
+      event.stopPropagation()
+    }
+
     const onContextMenu = (event: MouseEvent) => {
+      if (browserMenu && event.shiftKey) {
+        return
+      }
+
       const element = event.target instanceof Element ? event.target : null
 
       const trigger = element?.closest(`[${HERMES_CONTEXT_MENU_TRIGGER_ATTR}], [data-slot="context-menu-trigger"]`)
@@ -574,7 +591,7 @@ export function AppContextMenu() {
       const terminal = terminalMenuHandleFor(element)
 
       if (terminal) {
-        event.stopPropagation()
+        claimGesture(event)
         openTerminalContextMenu(event.clientX, event.clientY, terminal)
 
         return
@@ -605,7 +622,7 @@ export function AppContextMenu() {
         return
       }
 
-      event.stopPropagation()
+      claimGesture(event)
       openDomContextMenu(event.clientX, event.clientY, target)
     }
 

@@ -21,6 +21,7 @@ import {
   saveLocalImage,
   saveLocalText
 } from './local-files'
+import { contextMenuCopyImage, contextMenuEdit } from './context-menu'
 import { copyText, downloadUrl, readClipboardText, saveText, showNotification } from './web-platform'
 
 type HermesDesktopBridge = Window['hermesDesktop']
@@ -277,6 +278,8 @@ export function createWebBridge(): HermesDesktopBridge {
     },
     writeClipboard: copyText,
     readClipboard: readClipboardText,
+    contextMenuEdit,
+    contextMenuCopyImage,
     saveImageFromUrl: url => Promise.resolve(downloadUrl(url)),
     saveTextFileAs: request => Promise.resolve(saveText(request)),
     saveGatewayFile: payload =>
