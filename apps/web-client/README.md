@@ -79,8 +79,18 @@ to the gateway, so it is same-origin like production.
 npm run build        # → apps/web-client/dist
 ```
 
-Serve `dist/` and the gateway from one origin. `deploy/Caddyfile` does that;
-with Docker on the gateway host:
+Serve `dist/` and the gateway from one origin. The simplest way: if the host
+already runs `hermes dashboard` (a Docker/NAS app, say), point it at the
+bundle instead of the built-in dashboard UI. The dashboard serves whatever
+`HERMES_WEB_DIST` names, and its sign-in page and API stay as they are:
+
+```bash
+HERMES_WEB_DIST=/path/to/apps/web-client/dist hermes dashboard --host 0.0.0.0 --skip-build
+```
+
+That replaces the settings dashboard at that address; Desktop clients are
+unaffected. To keep both, run the client on its own address with
+`deploy/Caddyfile`. With Docker on the gateway host:
 
 ```bash
 docker run -d --name hermes-web --network host \
