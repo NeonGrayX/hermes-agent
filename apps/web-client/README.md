@@ -7,9 +7,16 @@ already running; it does not run the agent itself.
 It is the desktop renderer (`apps/desktop/src`), unchanged, built with a web
 bridge in place of Electron. Everything the desktop app does over its remote
 connection works here: chat with streaming tool output, sessions, projects,
-profiles, settings, skills, cron jobs, messaging, and the file and git views of
-the gateway host. Agent tools, terminal commands and file operations run on the
-gateway host.
+profiles, settings, skills, cron jobs, messaging, the file and git views of
+the gateway host with file previews and editing, audio/video playback, and
+attachments from this device (pick, drop or paste images and files; they are
+uploaded to the gateway). Agent tools, terminal commands and file operations
+run on the gateway host.
+
+On a phone the sidebars become drawers (tap outside to close), a tapped file
+opens as a tab next to the chat, and the layout follows the on-screen keyboard
+and the screen's safe area. "Add to Home Screen" installs it as a standalone
+app.
 
 ## How it connects
 
@@ -26,6 +33,9 @@ gateway host.
 
 `src/bridge/` implements `window.hermesDesktop` for the browser. Native-only
 capabilities reject with a "not available in the Hermes web client" error.
+Files from this device get virtual paths (`src/bridge/local-files.ts`) whose
+bytes the bridge serves from memory, so the renderer's remote-mode upload path
+works unchanged.
 
 ## Run the gateway
 
@@ -89,8 +99,9 @@ notifications and "Add to Home Screen" install on secure origins. Caddy's
 ## Not available in the browser
 
 These need the Electron main process: the in-app browser pane and its
-annotation mode, local terminals, the floating HUD, pet overlay and Quick
-Entry, the macOS screenshot shortcut, separate session windows, native file
-pickers and drag-and-drop paths, OS keychain storage, managing other gateways
-(SSH, Hermes Cloud, the gateway registry), local installs, updates and
-uninstall, and the VS Code theme marketplace.
+annotation mode, the terminal pane (the gateway exposes no shell over the
+network; the agent's own terminal tool is unaffected), the floating HUD, pet
+overlay and Quick Entry, the macOS screenshot shortcut, separate session
+windows, OS keychain storage, managing other gateways (SSH, Hermes Cloud, the
+gateway registry), local installs, updates and uninstall, and the VS Code
+theme marketplace.
