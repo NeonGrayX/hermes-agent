@@ -16,7 +16,8 @@ if (typeof crypto.randomUUID !== 'function') {
   }
 }
 
-window.hermesDesktop = createWebBridge()
+// Without `terminal`, which the renderer checks for before showing the pane.
+window.hermesDesktop = createWebBridge() as Window['hermesDesktop']
 document.documentElement.dataset.hermesWeb = 'true'
 trackVisualViewport()
 trackContextMenuTarget()

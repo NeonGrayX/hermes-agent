@@ -24,7 +24,9 @@ import {
 import { contextMenuCopyImage, contextMenuEdit } from './context-menu'
 import { copyText, downloadUrl, readClipboardText, saveText, showNotification } from './web-platform'
 
-type HermesDesktopBridge = Window['hermesDesktop']
+/** Everything but local PTYs: a browser has no terminal to give, and the
+ *  renderer hides the terminal pane when `terminal` is missing. */
+export type HermesDesktopBridge = Omit<Window['hermesDesktop'], 'terminal'>
 
 const noop = (): void => undefined
 const unsubscribe = (): (() => void) => noop
